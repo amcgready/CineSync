@@ -9,6 +9,15 @@ import sys
 import pkg_resources
 import platform
 import sqlite3
+import json
+import time
+import glob
+import threading
+import atexit
+from datetime import datetime
+from discord_webhook import DiscordWebhook, DiscordEmbed
+from dotenv import load_dotenv
+
 
 # Append the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +29,16 @@ from MediaHub.processors.db_utils import get_database_stats, vacuum_database, ve
 # Script Metadata
 SCRIPT_VERSION = "2.2"
 SCRIPT_DATE = "2025-01-13"
+
+# Load environment variables
+load_dotenv()
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+MONITORING_INTERVAL = int(os.getenv("MONITORING_INTERVAL", 300))  # Default to 5 minutes
+monitoring_enabled = False  # Flag to enable monitoring after a scan starts
+
+
+# Define log directory
+LOGS_FOLDER = "logs"
 
 # Define variables
 SCRIPTS_FOLDER = "MediaHub"
@@ -192,6 +211,96 @@ def real_time_monitoring():
         print_color("Warning: Real-Time Monitoring is only available on Linux OS.", "yellow")
         input("Press Enter to return to the main menu...")
 
+# Function to send Discord notifications
+def send_discord_notification(message, color, file_path=None):
+    if not DISCORD_WEBHOOK_URL:
+        logging.error("Discord webhook URL is not set.")
+        return
+    
+    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL)
+    embed = DiscordEmbed(description=message, color=color)  # Use only description, no title
+    embed.set_timestamp()
+    webhook.add_embed(embed)
+
+    # Prevent NoneType errors in file handling
+    if file_path and os.path.exists(file_path):
+        try:
+            with open(file_path, "rb") as file:
+                webhook.add_file(file=file.read(), filename=os.path.basename(file_path))
+        except Exception as e:
+            logging.error(f"Error attaching file {file_path}: {e}")
+
+    webhook.execute()
+
+# Function to get the latest log file
+def get_latest_log_file():
+    log_files = sorted(glob.glob(os.path.join(LOGS_FOLDER, "*.log")), key=os.path.getmtime, reverse=True)
+    return log_files[0] if log_files else ""  # Ensures it never returns None
+
+# Notify when a scan starts
+def notify_scan_started(scan_type):
+    global monitoring_enabled
+    message = f"📘 **Scan Started:** {scan_type}"
+    send_discord_notification(message, color=3447003)
+    monitoring_enabled = True  # Enable monitoring after the first scan starts
+
+# Notify when the script is terminated
+def notify_script_terminated():
+    log_file = get_latest_log_file()
+    message = "🚨 **Script Terminated:** The script has been stopped or closed unexpectedly."
+    send_discord_notification(message, color=15158332, file_path=log_file)
+
+# Notify monitoring status
+def notify_monitoring():
+    if not monitoring_enabled:
+        return  # Do not send monitoring notifications until a scan has started and interval is met
+    
+    log_file = get_latest_log_file()
+    warning_count, error_count, critical_count = count_log_issues(log_file) if log_file else (0, 0, 0)
+    
+    message = (f"🟢 **Actively Monitoring**\n"
+               f"Warnings: **{warning_count}** 🟡\n"
+               f"Errors: **{error_count}** 🟠\n"
+               f"Critical: **{critical_count}** 🔴")
+    send_discord_notification(message, color=3066993, file_path=log_file)
+
+# Count issues in logs
+def count_log_issues(log_file):
+    if not log_file or not os.path.exists(log_file):  # Ensure file exists
+        return 0, 0, 0
+
+    warning_count = error_count = critical_count = 0
+    try:
+        with open(log_file, "r", encoding="utf-8") as file:
+            for line in file:
+                if "WARNING" in line:
+                    warning_count += 1
+                elif "ERROR" in line:
+                    error_count += 1
+                elif "CRITICAL" in line:
+                    critical_count += 1
+    except Exception as e:
+        logging.error(f"Error reading log file {log_file}: {e}")
+
+    return warning_count, error_count, critical_count
+
+# Monitoring loop
+monitoring_running = True  # Flag to control monitoring execution
+
+def monitoring_loop():
+    global monitoring_running
+    while monitoring_running:
+        if monitoring_enabled:
+            time.sleep(MONITORING_INTERVAL)  # Wait for the interval
+            notify_monitoring()
+        time.sleep(1)  # Prevent CPU overuse
+
+def stop_monitoring():
+    global monitoring_running
+    monitoring_running = False  # Stop monitoring when script exits
+
+atexit.register(stop_monitoring)  # Ensure monitoring stops when the script exits
+
 # Function to execute full library scan
 def execute_full_library_scan():
     while True:
@@ -205,34 +314,35 @@ def execute_full_library_scan():
         print("5) Back to Main Menu")
         choice = input("Select an option: ")
 
+        scan_types = {
+            '1': 'Auto Scan',
+            '2': 'Auto Force Scan',
+            '3': 'Manual Scan',
+            '4': 'Manual Force Scan'
+        }
+
+        if choice in scan_types:
+            notify_scan_started(scan_types[choice])
+
         try:
-            if choice == '1':
-                if os.path.exists(LIBRARY_SCRIPT):
-                        subprocess.run([python_command, LIBRARY_SCRIPT, '--auto-select'], check=True)
-                        input("Auto scan completed. Press Enter to return to the main menu...")
+            if choice in ['1', '2', '3', '4']:
+                if LIBRARY_SCRIPT and os.path.exists(LIBRARY_SCRIPT):
+                    scan_args = {
+                        '1': ['--auto-select'],
+                        '2': ['--auto-select', '--force'],
+                        '3': [],
+                        '4': ['--force']
+                    }
+                    subprocess.run([python_command, LIBRARY_SCRIPT] + scan_args[choice], check=True)
+                    input(f"{scan_types[choice]} completed. Press Enter to return to the main menu...")
+                if not LIBRARY_SCRIPT or not os.path.exists(LIBRARY_SCRIPT):
+                    print_color("Error: Library script not found!", "red")
+                    logging.error("Library script not found. Cannot proceed with scan.")
+                    return  # Exit function instead of running a broken subprocess
+  
                 else:
                     print_color("Error: The script does not exist.", "red")
-                    input("Press Enter to return to the main menu...")
-            elif choice == '2':
-                if os.path.exists(LIBRARY_SCRIPT):
-                        subprocess.run([python_command, LIBRARY_SCRIPT, '--auto-select', '--force'], check=True)
-                        input("Force scan completed. Press Enter to return to the main menu...")
-                else:
-                    print_color("Error: The library.py script does not exist.", "red")
-                    input("Press Enter to return to the main menu...")
-            elif choice == '3':
-                if os.path.exists(LIBRARY_SCRIPT):
-                        subprocess.run([python_command, LIBRARY_SCRIPT], check=True)
-                        input("Manual scan completed. Press Enter to return to the main menu...")
-                else:
-                    print_color("Error: The library.py script does not exist.", "red")
-                    input("Press Enter to return to the main menu...")
-            elif choice == '4':
-                if os.path.exists(LIBRARY_SCRIPT):
-                        subprocess.run([python_command, LIBRARY_SCRIPT, '--force'], check=True)
-                        input("Force scan completed. Press Enter to return to the main menu...")
-                else:
-                    print_color("Error: The library.py script does not exist.", "red")
+                    logging.error("Library script path is invalid or does not exist.")
                     input("Press Enter to return to the main menu...")
             elif choice == '5':
                 break
@@ -397,6 +507,14 @@ def database_management():
 
 # Main function
 def main():
+    # Register script termination notification
+    atexit.register(notify_script_terminated)
+
+    # Start monitoring in the background
+    if MONITORING_INTERVAL > 0:
+        monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
+        monitoring_thread.start()
+
     while True:
         clear_screen()
         print_banner()
@@ -430,3 +548,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
