@@ -86,6 +86,7 @@ CineSync’s real-time monitoring is now a core feature of the script and Docker
 
 ## Contributors
 
-- [Suresh S](https://github.com/sureshfizzy)❤️
+- [Suresh S](https://github.com/sureshfizzy) - Primary Dev and Creator ❤️
+- [Adam M](https://github.com/amcgready) - Additional Features ❤️
 - Special thanks to [Paolo](https://github.com/RunAway189) for testing the application.!
 - [Buy Me a Coffee](https://www.buymeacoffee.com/Sureshfizzy)☕
