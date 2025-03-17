@@ -21,6 +21,11 @@ CineSync is a Python-based library management system designed to efficiently org
 
 CineSync works by creating symbolic links from the source directory to the destination directory and organizing them according to the user's preferences. This allows users to maintain a well-structured library without physically moving or duplicating the original files.
 
+# Features Introduced by this Fork
+- Log output to file
+- Color-coded logging in terminal
+- Additional file extension definition
+
 ## Getting Started
 
 For detailed instructions on installation, configuration, and usage, please visit our Wiki:
