@@ -5,6 +5,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import logoImage from '../../assets/logo.png';
 import './topbar-fixes.css';
 
@@ -52,7 +53,7 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
       }}
     >
       <Toolbar sx={{
-        minHeight: { xs: 116, sm: 128 }, // Increased height to accommodate 3x larger logo
+        minHeight: 188, // Fixed height to accommodate 180px logo
         px: { xs: 2, sm: 3 },
         display: 'flex',
         justifyContent: 'space-between',
@@ -102,15 +103,14 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: { xs: 108, sm: 120 }, // 3x larger (was 36/40, then 72/80)
-                height: { xs: 108, sm: 120 }, // 3x larger (was 36/40, then 72/80)
-                borderRadius: 2,
+                width: 180, // Fixed width to match sidebar (180px on all screen sizes)
+                height: 180, // Fixed height to maintain square aspect ratio
+                borderRadius: 0, // Remove border radius
                 overflow: 'hidden',
-                boxShadow: `0 2px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+                // Removed box shadow and border styling
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                  transform: 'scale(1.05)',
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  transform: 'scale(1.02)', // Reduced hover scale
                 }
               }}
             >
@@ -149,52 +149,13 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
               >
                 CineSync
               </Typography>
-              <Chip
-                label="v3.0"
-                size="small"
-                variant="outlined"
-                sx={{
-                  height: 20,
-                  fontSize: '0.65rem',
-                  fontWeight: 600,
-                  color: theme.palette.primary.main,
-                  borderColor: theme.palette.primary.main,
-                  bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  '& .MuiChip-label': {
-                    px: 0.75
-                  },
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.primary.main, 0.12),
-                  },
-                  transition: 'all 0.2s ease-in-out'
-                }}
-              />
             </Box>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-          <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
-            <IconButton
-              size="small"
-              onClick={toggleTheme}
-              sx={{
-                color: 'text.secondary',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.08),
-                  color: theme.palette.primary.main,
-                },
-                transition: 'all 0.2s ease-in-out'
-              }}
-            >
-              {mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-
-          <Box sx={{
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: { xs: 1, sm: 1.5 }, alignSelf: 'flex-start', mt: 0.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{
             display: 'flex',
             alignItems: 'center',
             gap: { xs: 0.75, sm: 1 },
@@ -258,6 +219,56 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
                 <LogoutIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+          </Box>
+
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1, 
+              mt: 0.25, // Further reduced padding above the chips (was 1.0)
+              justifyContent: 'center' // Center the chips
+            }}>
+              <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+                <IconButton
+                  size="small"
+                  onClick={toggleTheme}
+                  sx={{
+                    color: 'text.secondary',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      color: theme.palette.primary.main,
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  {mode === 'dark' ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+
+              <Chip
+                label="v3.0"
+                size="small"
+                variant="outlined"
+                sx={{
+                  height: 20,
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  color: theme.palette.primary.main,
+                  borderColor: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  '& .MuiChip-label': {
+                    px: 0.75
+                  },
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.12),
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              />
+            </Box>
           </Box>
         </Box>
       </Toolbar>

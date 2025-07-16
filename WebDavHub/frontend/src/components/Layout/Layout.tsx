@@ -72,7 +72,7 @@ export default function Layout({ toggleTheme, mode }: LayoutProps) {
         display: 'flex',
         flexGrow: 1,
         overflow: 'hidden',
-        pt: { xs: '116px', sm: '128px' } // Updated to match new larger toolbar height
+        pt: '188px' // Fixed padding to match 188px toolbar height
       }}>
 
         {!isMobile && !isMediaDetailsPage && (
