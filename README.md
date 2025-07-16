@@ -183,4 +183,5 @@ Enjoy hassle-free, self-hosted app management with ElfHosted.
 ## Contributors
 
 - [Suresh S](https://github.com/sureshfizzy) ❤️
+- [Adam McGready](https://github.com/amcgready)
 - Special thanks to [Paolo](https://github.com/RunAway189) for testing the application! 🙏

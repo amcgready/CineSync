@@ -52,7 +52,7 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
       }}
     >
       <Toolbar sx={{
-        minHeight: { xs: 56, sm: 64 },
+        minHeight: { xs: 116, sm: 128 }, // Increased height to accommodate 3x larger logo
         px: { xs: 2, sm: 3 },
         display: 'flex',
         justifyContent: 'space-between',
@@ -83,6 +83,7 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
 
           <Box
             onClick={handleLogoClick}
+            data-topbar-logo
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -101,8 +102,8 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: { xs: 36, sm: 40 },
-                height: { xs: 36, sm: 40 },
+                width: { xs: 108, sm: 120 }, // 3x larger (was 36/40, then 72/80)
+                height: { xs: 108, sm: 120 }, // 3x larger (was 36/40, then 72/80)
                 borderRadius: 2,
                 overflow: 'hidden',
                 boxShadow: `0 2px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
@@ -122,18 +123,28 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
                   objectFit: 'contain',
                   display: 'block'
                 }}
+                onError={(e) => {
+                  // Hide the logo and show fallback text if logo fails to load
+                  e.currentTarget.style.display = 'none';
+                  const textElement = e.currentTarget.closest('[data-topbar-logo]')?.querySelector('[data-fallback-text]') as HTMLElement;
+                  if (textElement) {
+                    textElement.style.display = 'block';
+                  }
+                }}
               />
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="h6"
+                data-fallback-text
                 sx={{
                   fontWeight: 600,
                   color: 'text.primary',
                   fontSize: { xs: '1.25rem', sm: '1.35rem' },
                   letterSpacing: '-0.01em',
-                  fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                  fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  display: 'none' // Hidden by default, only shown if logo fails to load
                 }}
               >
                 CineSync

@@ -13,3 +13,7 @@ WebDavHub/data/
 WebDavHub/cinesync
 WebDavHub/cinesync.exe
 WebDavHub/frontend/dist/
+.gitignore
+.env
+docker-compose.dev.yml
+logo-2x-demo.html

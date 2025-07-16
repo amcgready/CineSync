@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Alert, Snackbar, Box, Typography, Grid, IconButton, Chip, Stack, useTheme, alpha, Backdrop, CircularProgress, Fade } from '@mui/material';
+import { Container, Alert, Snackbar, Box, Typography, Grid, IconButton, Chip, Stack, useTheme, alpha, Backdrop, CircularProgress, Fade, Menu, MenuItem, Button } from '@mui/material';
 import axios from 'axios';
-import { Refresh, Save, TuneRounded, ChevronRight, ChevronLeft, HomeRounded, VideoLibraryRounded, StorageRounded, NetworkCheckRounded, ApiRounded, LiveTvRounded, CreateNewFolderRounded, AccountTreeRounded, DriveFileRenameOutlineRounded, SettingsApplicationsRounded, Build, WorkRounded, FilterListRounded } from '@mui/icons-material';
+import { Refresh, Save, TuneRounded, HomeRounded, VideoLibraryRounded, StorageRounded, NetworkCheckRounded, ApiRounded, LiveTvRounded, CreateNewFolderRounded, AccountTreeRounded, DriveFileRenameOutlineRounded, SettingsApplicationsRounded, Build, WorkRounded, FilterListRounded, ExpandMore } from '@mui/icons-material';
 import ConfirmDialog from '../components/Settings/ConfirmDialog';
 import LoadingButton from '../components/Settings/LoadingButton';
 import { FormField } from '../components/Settings/FormField';
@@ -57,6 +57,11 @@ const Settings: React.FC = () => {
     effectiveRootDir: string;
     needsConfiguration: boolean;
   } | null>(null);
+  
+  // State for dropdown menus
+  const [generalMenuAnchor, setGeneralMenuAnchor] = useState<null | HTMLElement>(null);
+  const [servicesMenuAnchor, setServicesMenuAnchor] = useState<null | HTMLElement>(null);
+  const [jobsMenuAnchor, setJobsMenuAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     fetchConfig();
@@ -333,9 +338,24 @@ const Settings: React.FC = () => {
 
   // Define main tabs
   const mainTabs = [
-    { name: 'General', icon: <TuneRounded sx={{ fontSize: 28 }} />, color: '#3b82f6' },
-    { name: 'Services', icon: <ApiRounded sx={{ fontSize: 28 }} />, color: '#10b981' },
-    { name: 'Jobs', icon: <WorkRounded sx={{ fontSize: 28 }} />, color: '#8b5cf6' }
+    { 
+      name: 'General', 
+      icon: <TuneRounded sx={{ fontSize: 28 }} />, 
+      color: '#3b82f6',
+      hasDropdown: true
+    },
+    { 
+      name: 'Services', 
+      icon: <ApiRounded sx={{ fontSize: 28 }} />, 
+      color: '#10b981',
+      hasDropdown: true
+    },
+    { 
+      name: 'Jobs', 
+      icon: <WorkRounded sx={{ fontSize: 28 }} />, 
+      color: '#8b5cf6',
+      hasDropdown: true
+    }
   ];
 
   // Define category order for General tab (configuration categories)
@@ -353,6 +373,74 @@ const Settings: React.FC = () => {
     'Rclone Mount Configuration', // Mount verification & monitoring
     'Logging Configuration', // Logging - log level & output settings
     'System Configuration', // Advanced
+  ];
+
+  // Define options for Services tab
+  const servicesOptions = [
+    {
+      name: 'MediaHub Service',
+      description: 'Main service management and control',
+      icon: <SettingsApplicationsRounded sx={{ fontSize: 16 }} />,
+      color: '#10b981',
+      action: () => {
+        setSelectedMainTab(1);
+        setSelectedTab(0);
+      }
+    },
+    {
+      name: 'Service Status',
+      description: 'View current service health and status',
+      icon: <NetworkCheckRounded sx={{ fontSize: 16 }} />,
+      color: '#06b6d4',
+      action: () => {
+        setSelectedMainTab(1);
+        setSelectedTab(0);
+      }
+    },
+    {
+      name: 'Service Logs',
+      description: 'View and monitor service logs',
+      icon: <Build sx={{ fontSize: 16 }} />,
+      color: '#f59e0b',
+      action: () => {
+        setSelectedMainTab(1);
+        setSelectedTab(0);
+      }
+    }
+  ];
+
+  // Define options for Jobs tab
+  const jobsOptions = [
+    {
+      name: 'Active Jobs',
+      description: 'View and manage currently running jobs',
+      icon: <WorkRounded sx={{ fontSize: 16 }} />,
+      color: '#8b5cf6',
+      action: () => {
+        setSelectedMainTab(2);
+        setSelectedTab(0);
+      }
+    },
+    {
+      name: 'Job History',
+      description: 'View completed and failed job history',
+      icon: <StorageRounded sx={{ fontSize: 16 }} />,
+      color: '#6b7280',
+      action: () => {
+        setSelectedMainTab(2);
+        setSelectedTab(0);
+      }
+    },
+    {
+      name: 'Scheduled Jobs',
+      description: 'Manage scheduled and recurring jobs',
+      icon: <ApiRounded sx={{ fontSize: 16 }} />,
+      color: '#ef4444',
+      action: () => {
+        setSelectedMainTab(2);
+        setSelectedTab(0);
+      }
+    }
   ];
 
   const configByCategory = config
@@ -658,177 +746,80 @@ const Settings: React.FC = () => {
           <Box
             sx={{
               display: 'flex',
-              gap: 0.5,
-              p: 0.5,
-              bgcolor: alpha(theme.palette.background.paper, 0.8),
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: alpha(theme.palette.divider, 0.5),
+              gap: 2,
               width: { xs: '100%', sm: 'fit-content' },
               maxWidth: '100%',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-              overflowX: { xs: 'auto', sm: 'visible' },
-              '&::-webkit-scrollbar': {
-                display: 'none',
-              },
-              scrollbarWidth: 'none',
+              flexWrap: 'wrap',
             }}
           >
             {mainTabs.map((tab, index) => {
               const isSelected = selectedMainTab === index;
+              let menuAnchor: HTMLElement | null = null;
+              let setMenuAnchor: ((value: HTMLElement | null) => void) | null = null;
+              let categories: [string, ConfigValue[]][] = [];
+              let options: any[] = [];
+              let hasDropdown = false;
+              
+              if (index === 0) { // General
+                menuAnchor = generalMenuAnchor;
+                setMenuAnchor = setGeneralMenuAnchor;
+                categories = orderedCategories;
+                hasDropdown = categories.length > 0;
+              } else if (index === 1) { // Services
+                menuAnchor = servicesMenuAnchor;
+                setMenuAnchor = setServicesMenuAnchor;
+                options = servicesOptions;
+                hasDropdown = true;
+              } else if (index === 2) { // Jobs
+                menuAnchor = jobsMenuAnchor;
+                setMenuAnchor = setJobsMenuAnchor;
+                options = jobsOptions;
+                hasDropdown = true;
+              }
+
               return (
-                <Box
-                  key={tab.name}
-                  onClick={() => {
-                    setSelectedMainTab(index);
-                    setSelectedTab(0); // Reset sub-tab selection
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    px: { xs: 1.5, sm: 4 },
-                    py: { xs: 1, sm: 2 },
-                    borderRadius: 2.5,
-                    bgcolor: isSelected
-                      ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
-                      : 'transparent',
-                    background: isSelected
-                      ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
-                      : 'transparent',
-                    color: isSelected ? 'white' : 'text.primary',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    flex: { xs: '1 1 0', sm: '0 0 auto' },
-                    minWidth: { xs: 0, sm: 'auto' },
-                    whiteSpace: 'nowrap',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&:hover': {
+                <Box key={tab.name}>
+                  <Button
+                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                      if (hasDropdown && setMenuAnchor) {
+                        // For tabs with dropdowns, show dropdown
+                        setMenuAnchor(event.currentTarget);
+                      } else {
+                        // For other tabs, direct navigation
+                        setSelectedMainTab(index);
+                        setSelectedTab(0);
+                      }
+                    }}
+                    endIcon={hasDropdown ? <ExpandMore /> : null}
+                    sx={{
+                      px: { xs: 1.5, sm: 2.5 },
+                      py: { xs: 1, sm: 1.25 },
+                      borderRadius: 2.5,
                       bgcolor: isSelected
                         ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
-                        : alpha(tab.color, 0.1),
+                        : alpha(theme.palette.background.paper, 0.8),
                       background: isSelected
                         ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
-                        : alpha(tab.color, 0.1),
-                      transform: 'translateY(-1px)',
-                      boxShadow: isSelected
-                        ? `0 12px 24px ${alpha(tab.color, 0.3)}`
-                        : `0 4px 12px ${alpha(tab.color, 0.2)}`,
-                    },
-                    '&:active': {
-                      transform: 'translateY(0px)',
-                    },
-                    '&::before': isSelected ? {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: `linear-gradient(135deg, ${alpha('#ffffff', 0.1)} 0%, transparent 50%)`,
-                      borderRadius: 'inherit',
-                      pointerEvents: 'none',
-                    } : {},
-                  }}
-                >
-                  <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.5 }} sx={{ minWidth: 0, justifyContent: 'center' }}>
-                    <Box
-                      sx={{
-                        width: { xs: 18, sm: 24 },
-                        height: { xs: 18, sm: 24 },
-                        borderRadius: 1,
-                        bgcolor: isSelected ? 'rgba(255, 255, 255, 0.2)' : alpha(tab.color, 0.15),
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: isSelected ? 'white' : tab.color,
-                        transition: 'all 0.3s ease',
-                        flexShrink: 0,
-                        '& svg': {
-                          fontSize: { xs: 14, sm: 18 },
-                          filter: isSelected ? 'none' : 'none',
-                        },
-                      }}
-                    >
-                      {tab.icon}
-                    </Box>
-                    <Typography
-                      variant="body1"
-                      fontWeight="600"
-                      sx={{
-                        fontSize: { xs: '0.8rem', sm: '1rem' },
-                        letterSpacing: '0.02em',
-                        flexShrink: 0,
-                        minWidth: 0,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {tab.name}
-                    </Typography>
-                  </Stack>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
-
-        {/* Sub-Tab Navigation (only for General) */}
-        {selectedMainTab === 0 && (
-        <Box sx={{ mb: 4, position: 'relative' }}>
-          {/* Desktop: Clean Horizontal Tabs */}
-          <Box
-            sx={{
-              display: { xs: 'none', lg: 'block' },
-              mb: 2,
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 0.5,
-                p: 0.5,
-                bgcolor: 'background.paper',
-                borderRadius: 2,
-                border: '1px solid',
-                borderColor: 'divider',
-                overflowX: 'auto',
-                '&::-webkit-scrollbar': {
-                  height: 6,
-                },
-                '&::-webkit-scrollbar-track': {
-                  bgcolor: 'transparent',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  bgcolor: 'divider',
-                  borderRadius: 3,
-                  '&:hover': {
-                    bgcolor: 'text.secondary',
-                  },
-                },
-              }}
-            >
-              {orderedCategories.map(([category, items], index) => {
-                const categoryInfo = getCategoryInfo(category, items);
-                const isSelected = selectedTab === index;
-                const hasModifications = categoryInfo.modifiedCount > 0;
-
-                return (
-                  <Box
-                    key={category}
-                    onClick={() => setSelectedTab(index)}
-                    sx={{
-                      cursor: 'pointer',
-                      px: 2,
-                      py: 1.5,
-                      borderRadius: 1.5,
-                      bgcolor: isSelected ? 'primary.main' : 'transparent',
-                      color: isSelected ? 'primary.contrastText' : 'text.primary',
-                      transition: 'all 0.2s ease-in-out',
-                      minWidth: 'fit-content',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      position: 'relative',
+                        : alpha(theme.palette.background.paper, 0.8),
+                      color: isSelected ? 'white' : 'text.primary',
+                      border: '1px solid',
+                      borderColor: isSelected ? 'transparent' : alpha(theme.palette.divider, 0.5),
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: isSelected ? `0 8px 32px ${alpha(tab.color, 0.3)}` : '0 4px 16px rgba(0, 0, 0, 0.1)',
+                      textTransform: 'none',
+                      minWidth: 'auto',
                       '&:hover': {
-                        bgcolor: isSelected ? 'primary.main' : 'action.hover',
+                        bgcolor: isSelected
+                          ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
+                          : alpha(tab.color, 0.1),
+                        background: isSelected
+                          ? `linear-gradient(135deg, ${tab.color} 0%, ${alpha(tab.color, 0.8)} 100%)`
+                          : alpha(tab.color, 0.1),
+                        transform: 'translateY(-1px)',
+                        boxShadow: isSelected
+                          ? `0 12px 24px ${alpha(tab.color, 0.4)}`
+                          : `0 8px 20px ${alpha(tab.color, 0.2)}`,
                       },
                     }}
                   >
@@ -837,315 +828,170 @@ const Settings: React.FC = () => {
                         sx={{
                           width: 20,
                           height: 20,
-                          borderRadius: 0.5,
-                          bgcolor: isSelected ? 'rgba(255, 255, 255, 0.2)' : categoryInfo.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#ffffff',
-                          '& svg': { fontSize: 14 },
-                        }}
-                      >
-                        {categoryInfo.icon}
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        fontWeight="500"
-                        sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: isSelected ? 600 : 500,
-                        }}
-                      >
-                        {categoryInfo.name}
-                      </Typography>
-                      {hasModifications && (
-                        <Box
-                          sx={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            bgcolor: 'warning.main',
-                            color: 'warning.contrastText',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.65rem',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {categoryInfo.modifiedCount}
-                        </Box>
-                      )}
-                    </Stack>
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-
-          {/* Tablet: Scrollable with Navigation Arrows */}
-          <Box
-            sx={{
-              display: { xs: 'none', sm: 'flex', lg: 'none' },
-              alignItems: 'center',
-              gap: 1,
-            }}
-          >
-            <IconButton
-              onClick={() => {
-                const container = document.getElementById('tab-scroll-container');
-                if (container) {
-                  container.scrollBy({ left: -200, behavior: 'smooth' });
-                }
-              }}
-              sx={{
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                '&:hover': { borderColor: 'primary.main' },
-              }}
-            >
-              <ChevronLeft />
-            </IconButton>
-
-            <Box
-              id="tab-scroll-container"
-              sx={{
-                display: 'flex',
-                gap: 1.5,
-                overflowX: 'auto',
-                scrollBehavior: 'smooth',
-                flex: 1,
-                py: 1,
-                // Custom scrollbar for tablet
-                '&::-webkit-scrollbar': {
-                  height: 4,
-                },
-                '&::-webkit-scrollbar-track': {
-                  bgcolor: 'divider',
-                  borderRadius: 2,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  bgcolor: 'primary.main',
-                  borderRadius: 2,
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                },
-              }}
-            >
-              {orderedCategories.map(([category, items], index) => {
-                const categoryInfo = getCategoryInfo(category, items);
-                const isSelected = selectedTab === index;
-                const hasModifications = categoryInfo.modifiedCount > 0;
-
-                return (
-                  <Box
-                    key={category}
-                    onClick={() => setSelectedTab(index)}
-                    sx={{
-                      cursor: 'pointer',
-                      px: 3,
-                      py: 2,
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: isSelected ? 'primary.main' : 'divider',
-                      bgcolor: isSelected ? 'primary.main' : 'background.paper',
-                      color: isSelected ? 'primary.contrastText' : 'text.primary',
-                      transition: 'all 0.2s ease-in-out',
-                      minWidth: 'fit-content',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        bgcolor: isSelected ? 'primary.main' : 'action.hover',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      },
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 0.5,
-                          bgcolor: isSelected ? 'rgba(255, 255, 255, 0.2)' : categoryInfo.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#ffffff',
-                          '& svg': { fontSize: 14 },
-                        }}
-                      >
-                        {categoryInfo.icon}
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        fontWeight="600"
-                        sx={{ fontSize: '0.875rem' }}
-                      >
-                        {categoryInfo.name}
-                      </Typography>
-                      {hasModifications && (
-                        <Chip
-                          label={categoryInfo.modifiedCount}
-                          size="small"
-                          color="warning"
-                          sx={{
-                            height: 18,
-                            fontSize: '0.7rem',
-                            '& .MuiChip-label': { px: 0.5 },
-                          }}
-                        />
-                      )}
-                    </Stack>
-                  </Box>
-                );
-              })}
-            </Box>
-
-            <IconButton
-              onClick={() => {
-                const container = document.getElementById('tab-scroll-container');
-                if (container) {
-                  container.scrollBy({ left: 200, behavior: 'smooth' });
-                }
-              }}
-              sx={{
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                '&:hover': { borderColor: 'primary.main' },
-              }}
-            >
-              <ChevronRight />
-            </IconButton>
-          </Box>
-
-          {/* Mobile: Larger Scrollable Tabs */}
-          <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1.5,
-                overflowX: 'auto',
-                scrollBehavior: 'smooth',
-                pb: 1.5,
-                px: 0.5,
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
-              }}
-            >
-              {orderedCategories.map(([category, items], index) => {
-                const categoryInfo = getCategoryInfo(category, items);
-                const isSelected = selectedTab === index;
-                const hasModifications = categoryInfo.modifiedCount > 0;
-
-                return (
-                  <Box
-                    key={category}
-                    onClick={() => setSelectedTab(index)}
-                    sx={{
-                      cursor: 'pointer',
-                      px: 3,
-                      py: 2.5,
-                      borderRadius: 3,
-                      border: '1px solid',
-                      borderColor: isSelected ? 'primary.main' : 'divider',
-                      bgcolor: isSelected ? 'primary.main' : 'background.paper',
-                      color: isSelected ? 'primary.contrastText' : 'text.primary',
-                      transition: 'all 0.2s ease-in-out',
-                      minWidth: 'fit-content',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      '&:hover': {
-                        borderColor: 'primary.main',
-                        bgcolor: isSelected ? 'primary.main' : 'action.hover',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      },
-                      '&:active': {
-                        transform: 'translateY(0px)',
-                      },
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <Box
-                        sx={{
-                          width: 24,
-                          height: 24,
                           borderRadius: 1,
-                          bgcolor: isSelected ? 'rgba(255, 255, 255, 0.2)' : categoryInfo.color,
+                          bgcolor: isSelected ? 'rgba(255, 255, 255, 0.2)' : alpha(tab.color, 0.15),
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#ffffff',
-                          '& svg': { fontSize: 16 },
+                          color: isSelected ? 'white' : tab.color,
+                          transition: 'all 0.3s ease',
+                          '& svg': {
+                            fontSize: 16,
+                          },
                         }}
                       >
-                        {categoryInfo.icon}
+                        {tab.icon}
                       </Box>
                       <Typography
                         variant="body2"
                         fontWeight="600"
                         sx={{
                           fontSize: '0.875rem',
-                          lineHeight: 1.2,
+                          letterSpacing: '0.02em',
                         }}
                       >
-                        {categoryInfo.name.split(' ')[0]}
+                        {tab.name}
                       </Typography>
-                      {hasModifications && (
-                        <Box
+                    </Stack>
+                  </Button>
+                  
+                  {/* Dropdown Menu */}
+                  {hasDropdown && setMenuAnchor && (
+                    <Menu
+                      anchorEl={menuAnchor}
+                      open={Boolean(menuAnchor)}
+                      onClose={() => setMenuAnchor(null)}
+                      PaperProps={{
+                        sx: {
+                          borderRadius: 2,
+                          minWidth: 280,
+                          maxHeight: 400,
+                          mt: 1,
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: 'background.paper',
+                        },
+                      }}
+                      transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+                      anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+                    >
+                      {/* General tab - categories */}
+                      {index === 0 && categories.map(([category, items], categoryIndex) => {
+                        const categoryInfo = getCategoryInfo(category, items);
+                        const hasModifications = categoryInfo.modifiedCount > 0;
+                        
+                        return (
+                          <MenuItem
+                            key={category}
+                            onClick={() => {
+                              setSelectedMainTab(0);
+                              setSelectedTab(categoryIndex);
+                              if (setMenuAnchor) {
+                                setMenuAnchor(null);
+                              }
+                            }}
+                            sx={{
+                              py: 1.5,
+                              px: 2,
+                              '&:hover': {
+                                bgcolor: alpha(categoryInfo.color, 0.1),
+                              },
+                            }}
+                          >
+                            <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
+                              <Box
+                                sx={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 1,
+                                  bgcolor: categoryInfo.color,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'white',
+                                  '& svg': { fontSize: 16 },
+                                }}
+                              >
+                                {categoryInfo.icon}
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
+                                  {categoryInfo.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                                  {categoryInfo.description}
+                                </Typography>
+                              </Box>
+                              {hasModifications && (
+                                <Chip
+                                  label={categoryInfo.modifiedCount}
+                                  size="small"
+                                  color="warning"
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+                          </MenuItem>
+                        );
+                      })}
+                      
+                      {/* Services and Jobs tabs - options */}
+                      {(index === 1 || index === 2) && options.map((option, optionIndex) => (
+                        <MenuItem
+                          key={optionIndex}
+                          onClick={() => {
+                            option.action();
+                            if (setMenuAnchor) {
+                              setMenuAnchor(null);
+                            }
+                          }}
                           sx={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            bgcolor: 'warning.main',
-                            color: 'warning.contrastText',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            flexShrink: 0,
+                            py: 1.5,
+                            px: 2,
+                            '&:hover': {
+                              bgcolor: alpha(option.color, 0.1),
+                            },
                           }}
                         >
-                          {categoryInfo.modifiedCount}
-                        </Box>
-                      )}
-                    </Stack>
-                  </Box>
-                );
-              })}
-            </Box>
-
-            {/* Scroll indicators for mobile */}
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                mt: 1,
-                gap: 0.5,
-              }}
-            >
-              {orderedCategories.map((_, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    bgcolor: selectedTab === index ? 'primary.main' : 'divider',
-                    transition: 'all 0.2s ease-in-out',
-                  }}
-                />
-              ))}
-            </Box>
+                          <Stack direction="row" alignItems="center" spacing={2} sx={{ width: '100%' }}>
+                            <Box
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1,
+                                bgcolor: option.color,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                '& svg': { fontSize: 16 },
+                              }}
+                            >
+                              {option.icon}
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
+                                {option.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                                {option.description}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </MenuItem>
+                      ))}
+                    </Menu>
+                  )}
+                </Box>
+              );
+            })}
           </Box>
         </Box>
-        )}
 
         {/* Tab Content */}
         {selectedMainTab === 0 && orderedCategories[selectedTab] && (() => {

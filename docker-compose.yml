@@ -1,6 +1,6 @@
 services:
   cinesync:
-    image: sureshfizzy/cinesync:latest
+    build: .  # Build from local Dockerfile instead of using pre-built image
     container_name: cinesync
     restart: unless-stopped
     environment:
@@ -14,3 +14,4 @@ services:
       - /mnt:/mnt  # Mount /mnt for access to external storage
       - ./db:/app/db  # Mount local db folder to persist database files
       - ./.env:/app/.env
+      - ./WebDavHub/frontend:/app/WebDavHub/frontend  # Mount frontend code for live updates
