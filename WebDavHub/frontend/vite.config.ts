@@ -85,5 +85,6 @@ export default defineConfig({
   },
   define: {
     'import.meta.env.VITE_TMDB_API_KEY': JSON.stringify(tmdbApiKey),
+    'import.meta.env.VITE_FANART_API_KEY': JSON.stringify(process.env.FANART_API_KEY || 'your_fanart_api_key_here'),
   },
 });

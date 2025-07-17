@@ -17,3 +17,5 @@ WebDavHub/frontend/dist/
 .env
 docker-compose.dev.yml
 logo-2x-demo.html
+dropdown-demo-complete.html
+settings-dropdown-demo.html
