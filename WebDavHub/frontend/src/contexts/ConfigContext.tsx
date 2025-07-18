@@ -5,6 +5,7 @@ import axios from 'axios';
 
 interface RuntimeConfig {
   tmdbApiKey?: string;
+  fanartApiKey?: string;
   apiPort?: number;
   uiPort?: number;
   ip?: string;
@@ -61,6 +62,9 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
           switch (item.key) {
             case 'TMDB_API_KEY':
               newConfig.tmdbApiKey = item.value;
+              break;
+            case 'FANART_API_KEY':
+              newConfig.fanartApiKey = item.value;
               break;
             case 'CINESYNC_API_PORT':
               newConfig.apiPort = item.value ? parseInt(item.value, 10) : undefined;

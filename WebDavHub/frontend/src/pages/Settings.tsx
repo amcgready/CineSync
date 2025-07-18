@@ -394,7 +394,7 @@ const Settings: React.FC = () => {
       color: '#06b6d4',
       action: () => {
         setSelectedMainTab(1);
-        setSelectedTab(0);
+        setSelectedTab(1);
       }
     },
     {
@@ -404,7 +404,7 @@ const Settings: React.FC = () => {
       color: '#f59e0b',
       action: () => {
         setSelectedMainTab(1);
-        setSelectedTab(0);
+        setSelectedTab(2);
       }
     }
   ];
@@ -428,7 +428,7 @@ const Settings: React.FC = () => {
       color: '#6b7280',
       action: () => {
         setSelectedMainTab(2);
-        setSelectedTab(0);
+        setSelectedTab(1);
       }
     },
     {
@@ -438,7 +438,7 @@ const Settings: React.FC = () => {
       color: '#ef4444',
       action: () => {
         setSelectedMainTab(2);
-        setSelectedTab(0);
+        setSelectedTab(2);
       }
     }
   ];
@@ -1448,14 +1448,46 @@ const Settings: React.FC = () => {
         {/* Services Tab Content */}
         {selectedMainTab === 1 && (
           <Box>
-            <MediaHubService />
+            {selectedTab === 0 && <MediaHubService />}
+            {selectedTab === 1 && (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>Service Status</Typography>
+                <Typography color="text.secondary">
+                  Service status monitoring is coming soon. Check the MediaHub Service tab for current functionality.
+                </Typography>
+              </Box>
+            )}
+            {selectedTab === 2 && (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>Service Logs</Typography>
+                <Typography color="text.secondary">
+                  Service logs viewing is coming soon. Check the MediaHub Service tab for current functionality.
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
 
         {/* Jobs Tab Content */}
         {selectedMainTab === 2 && (
           <Box>
-            <JobsTable onRefresh={fetchConfig} />
+            {selectedTab === 0 && <JobsTable onRefresh={fetchConfig} />}
+            {selectedTab === 1 && (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>Job History</Typography>
+                <Typography color="text.secondary">
+                  Job history viewing is coming soon. Check the Active Jobs tab for current functionality.
+                </Typography>
+              </Box>
+            )}
+            {selectedTab === 2 && (
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>Scheduled Jobs</Typography>
+                <Typography color="text.secondary">
+                  Scheduled jobs management is coming soon. Check the Active Jobs tab for current functionality.
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
       </Container>

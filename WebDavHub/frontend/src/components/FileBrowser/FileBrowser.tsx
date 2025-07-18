@@ -18,6 +18,7 @@ import ListView from './ListView';
 import AlphabetIndex from './AlphabetIndex';
 import ConfigurationPlaceholder from './ConfigurationPlaceholder';
 import axios from 'axios';
+import BulkSelectionToolbar from './BulkSelectionToolbar';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -104,6 +105,10 @@ export default function FileBrowser() {
   // Dialog states
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsData, setDetailsData] = useState<FileItem | null>(null);
+
+  // Selection state for bulk operations
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
 
   // Refs for tracking requests
   const folderFetchRef = useRef<{ [key: string]: boolean }>({});
@@ -491,6 +496,88 @@ export default function FileBrowser() {
     }
   };
 
+  // Selection handlers
+  const handleFileSelect = useCallback((fileName: string, checked: boolean) => {
+    setSelectedFiles(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(fileName);
+      } else {
+        newSet.delete(fileName);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      const allFileNames = filteredFiles.map(file => file.name);
+      setSelectedFiles(new Set(allFileNames));
+      setSelectionMode(true);
+    } else {
+      setSelectedFiles(new Set());
+      setSelectionMode(false);
+    }
+  }, [filteredFiles]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedFiles(new Set());
+    setSelectionMode(false);
+  }, []);
+
+  // Bulk action handlers
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedFiles.size === 0) return;
+    
+    // Show confirmation dialog and implement bulk delete logic
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedFiles.size} selected file(s)?`);
+    if (!confirmed) return;
+
+    try {
+      // Implement bulk delete API call here
+      console.log('Bulk deleting files:', Array.from(selectedFiles));
+      // After successful deletion, refresh the file list and clear selection
+      handleRefresh();
+      setSelectedFiles(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      console.error('Failed to delete files:', error);
+    }
+  }, [selectedFiles, handleRefresh]);
+
+  const handleBulkDownload = useCallback(async () => {
+    if (selectedFiles.size === 0) return;
+    
+    try {
+      // Implement bulk download logic here
+      console.log('Bulk downloading files:', Array.from(selectedFiles));
+      // For now, download files one by one
+      for (const fileName of selectedFiles) {
+        const file = filteredFiles.find(f => f.name === fileName);
+        if (file && file.type === 'file') {
+          const downloadPath = file.sourcePath || `${currentPath}/${fileName}`.replace(/\/+/g, '/');
+          const url = `/api/download?path=${encodeURIComponent(downloadPath)}`;
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          // Add small delay between downloads to avoid overwhelming the browser
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to download files:', error);
+    }
+  }, [selectedFiles, filteredFiles, currentPath]);
+
+  // Clear selection when path changes
+  useEffect(() => {
+    setSelectedFiles(new Set());
+    setSelectionMode(false);
+  }, [currentPath]);
+
   useEffect(() => {
     if (view !== 'poster') return;
 
@@ -762,6 +849,16 @@ export default function FileBrowser() {
         loading={isLetterFiltering}
       />
 
+      {/* Bulk Selection Toolbar */}
+      <BulkSelectionToolbar
+        selectedCount={selectedFiles.size}
+        totalCount={filteredFiles.length}
+        onSelectAll={handleSelectAll}
+        onClearSelection={handleClearSelection}
+        onBulkDelete={handleBulkDelete}
+        onBulkDownload={handleBulkDownload}
+      />
+
       <Fade in={!isLetterFiltering} timeout={300}>
         <Box>
           {view === 'poster' ? (
@@ -777,6 +874,9 @@ export default function FileBrowser() {
                 onRename={() => debouncedRefresh(currentPath)}
                 onDeleted={() => debouncedRefresh(currentPath)}
                 onNavigateBack={handleNavigateBack}
+                selectedFiles={selectedFiles}
+                onFileSelect={handleFileSelect}
+                selectionMode={selectionMode}
               />
               <PaginationComponent
                 totalPages={totalPages}
@@ -797,6 +897,9 @@ export default function FileBrowser() {
                 onDeleted={() => debouncedRefresh(currentPath)}
                 onError={setError}
                 onNavigateBack={handleNavigateBack}
+                selectedFiles={selectedFiles}
+                onFileSelect={handleFileSelect}
+                selectionMode={selectionMode}
               />
               <PaginationComponent
                 totalPages={totalPages}
@@ -888,6 +991,19 @@ export default function FileBrowser() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Selection Toolbar */}
+      {selectionMode && (
+        <BulkSelectionToolbar
+          selectedFiles={Array.from(selectedFiles)}
+          onFileSelect={handleFileSelect}
+          onClearSelection={handleClearSelection}
+          currentPath={currentPath}
+          onRefresh={() => debouncedRefresh(currentPath)}
+          onDelete={handleBulkDelete}
+          onDownload={handleBulkDownload}
+        />
+      )}
     </Box>
   );
 }

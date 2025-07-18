@@ -141,6 +141,7 @@ function FileOperations() {
   // Bulk delete state
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [bulkDeleteType, setBulkDeleteType] = useState<'skipped' | 'deleted'>('skipped');
 
   // Bulk selection state
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -667,24 +668,39 @@ function FileOperations() {
     }
   };
 
-  const handleBulkDeleteSkippedFiles = async () => {
+  const handleBulkDeleteFiles = async () => {
     setBulkDeleteLoading(true);
     try {
-      const response = await axios.delete('/api/file-operations');
+      // Use different endpoints or parameters based on the type
+      const endpoint = bulkDeleteType === 'skipped' ? '/api/file-operations' : '/api/file-operations/deleted';
+      const response = await axios.delete(endpoint);
 
       if (response.data.success) {
         console.log(response.data.message);
 
         // Update status counts to reflect the deletion
-        setStatusCounts(prev => ({
-          ...prev,
-          skipped: 0
-        }));
-
-        // Clear operations if we're on the skipped tab
-        if (tabValue === 3) {
-          setOperations([]);
-          setTotalOperations(0);
+        if (bulkDeleteType === 'skipped') {
+          setStatusCounts(prev => ({
+            ...prev,
+            skipped: 0
+          }));
+          
+          // Clear operations if we're on the skipped tab
+          if (tabValue === 3) {
+            setOperations([]);
+            setTotalOperations(0);
+          }
+        } else if (bulkDeleteType === 'deleted') {
+          setStatusCounts(prev => ({
+            ...prev,
+            deleted: 0
+          }));
+          
+          // Clear operations if we're on the deleted tab
+          if (tabValue === 4) {
+            setOperations([]);
+            setTotalOperations(0);
+          }
         }
 
         // Refresh data
@@ -693,8 +709,8 @@ function FileOperations() {
         setBulkDeleteDialogOpen(false);
       }
     } catch (error: any) {
-      console.error('Failed to delete skipped files:', error.response?.data?.error || error.message);
-      setError(error.response?.data?.error || error.message || 'Failed to delete skipped files');
+      console.error(`Failed to delete ${bulkDeleteType} files:`, error.response?.data?.error || error.message);
+      setError(error.response?.data?.error || error.message || `Failed to delete ${bulkDeleteType} files`);
     } finally {
       setBulkDeleteLoading(false);
     }
@@ -1783,7 +1799,10 @@ function FileOperations() {
               color="error"
               size="small"
               startIcon={<DeleteSweepIcon />}
-              onClick={() => setBulkDeleteDialogOpen(true)}
+              onClick={() => {
+                setBulkDeleteType('skipped');
+                setBulkDeleteDialogOpen(true);
+              }}
               disabled={bulkDeleteLoading}
               sx={{
                 borderRadius: 2,
@@ -1818,6 +1837,57 @@ function FileOperations() {
                 </>
               ) : (
                 `Delete All ${statusCounts.skipped}`
+              )}
+            </Button>
+          </Tooltip>
+        )}
+
+        {/* Bulk Delete Button for Deleted Files - Tabs Line Placement */}
+        {!isMobile && tabValue === 4 && statusCounts.deleted > 0 && (
+          <Tooltip title={`Delete all ${statusCounts.deleted} deleted file records from database`}>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<DeleteSweepIcon />}
+              onClick={() => {
+                setBulkDeleteType('deleted');
+                setBulkDeleteDialogOpen(true);
+              }}
+              disabled={bulkDeleteLoading}
+              sx={{
+                borderRadius: 2,
+                px: 2,
+                py: 0.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '0.75rem',
+                minWidth: 'auto',
+                border: '1px solid',
+                borderColor: 'error.main',
+                color: 'error.main',
+                bgcolor: alpha(theme.palette.error.main, 0.05),
+                ml: 2,
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.1),
+                  borderColor: 'error.dark',
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 2px 8px ${alpha(theme.palette.error.main, 0.25)}`,
+                },
+                '&:disabled': {
+                  bgcolor: alpha(theme.palette.error.main, 0.02),
+                  borderColor: alpha(theme.palette.error.main, 0.3),
+                  color: alpha(theme.palette.error.main, 0.5),
+                },
+              }}
+            >
+              {bulkDeleteLoading ? (
+                <>
+                  <CircularProgress size={14} sx={{ mr: 1 }} />
+                  Deleting...
+                </>
+              ) : (
+                `Delete All ${statusCounts.deleted}`
               )}
             </Button>
           </Tooltip>
@@ -2727,7 +2797,46 @@ function FileOperations() {
                 <MotionFab
                   color="error"
                   aria-label="delete all skipped"
-                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  onClick={() => {
+                    setBulkDeleteType('skipped');
+                    setBulkDeleteDialogOpen(true);
+                  }}
+                  disabled={bulkDeleteLoading}
+                  sx={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 88, // Position to the left of refresh button
+                    zIndex: 1000,
+                    background: 'linear-gradient(45deg, #ef4444 30%, #dc2626 90%)',
+                    boxShadow: '0 8px 16px 0 rgba(239, 68, 68, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #dc2626 30%, #b91c1c 90%)',
+                      boxShadow: '0 12px 20px 0 rgba(239, 68, 68, 0.4)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(239, 68, 68, 0.3)',
+                    },
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {bulkDeleteLoading ? (
+                    <CircularProgress size={24} sx={{ color: 'white' }} />
+                  ) : (
+                    <DeleteSweepIcon sx={{ fontSize: 24 }} />
+                  )}
+                </MotionFab>
+              )}
+
+              {/* Bulk Delete FAB for Deleted Files on Mobile */}
+              {mainTabValue === 0 && tabValue === 4 && statusCounts.deleted > 0 && (
+                <MotionFab
+                  color="error"
+                  aria-label="delete all deleted"
+                  onClick={() => {
+                    setBulkDeleteType('deleted');
+                    setBulkDeleteDialogOpen(true);
+                  }}
                   disabled={bulkDeleteLoading}
                   sx={{
                     position: 'fixed',
@@ -2854,13 +2963,15 @@ function FileOperations() {
             : `2px solid #fecaca`,
         }}>
           <DeleteSweepIcon />
-          Delete All Skipped Files
+          Delete All {bulkDeleteType === 'skipped' ? 'Skipped' : 'Deleted'} Files
         </DialogTitle>
         <DialogContent sx={{
           background: 'transparent',
         }}>
           <DialogContentText sx={{ mb: 2, color: 'text.primary' }}>
-            Are you sure you want to delete all <strong>{statusCounts.skipped}</strong> skipped files from the database?
+            Are you sure you want to delete all <strong>
+              {bulkDeleteType === 'skipped' ? statusCounts.skipped : statusCounts.deleted}
+            </strong> {bulkDeleteType} files from the database?
           </DialogContentText>
           <DialogContentText sx={{
             color: 'text.primary',
@@ -2875,7 +2986,7 @@ function FileOperations() {
               : `4px solid #f87171`,
             backdropFilter: 'blur(10px)',
           }}>
-            This action will permanently remove all skipped file records from the database.
+            This action will permanently remove all {bulkDeleteType} file records from the database.
             The original files will remain untouched in their source locations.
           </DialogContentText>
         </DialogContent>
@@ -2896,7 +3007,7 @@ function FileOperations() {
             Cancel
           </Button>
           <Button
-            onClick={handleBulkDeleteSkippedFiles}
+            onClick={handleBulkDeleteFiles}
             color="error"
             variant="contained"
             disabled={bulkDeleteLoading}

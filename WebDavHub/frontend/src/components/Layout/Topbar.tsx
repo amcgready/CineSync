@@ -4,7 +4,6 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../../contexts/AuthContext';
-import { useConfig } from '../../contexts/ConfigContext';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import logoImage from '../../assets/logo.png';
@@ -20,130 +19,44 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { logout, user } = useAuth();
-  const { config } = useConfig();
   const navigate = useNavigate();
   const [bannerImage, setBannerImage] = useState<string>('');
 
-  // Future enhancement ideas:
-  // 1. Use Canvas API to crop images client-side to perfect banner dimensions
-  // 2. Implement face/object detection to center important visual elements
-  // 3. Add user preference for banner style (action-focused vs landscape-focused)
-  // 4. Cache processed images locally to reduce API calls
-
-  // Fetch random banner from multiple sources
+  // Load random banner from local assets
   useEffect(() => {
-    const fetchRandomBanner = async () => {
+    const loadLocalBanner = async () => {
       try {
-        const TMDB_API_KEY = config.tmdbApiKey;
-        
-        if (!TMDB_API_KEY || TMDB_API_KEY === 'your_tmdb_api_key_here') {
-          console.warn('TMDB API key not configured. Banner feature disabled.');
-          return;
-        }
-
-        // First, get popular content from TMDB to get IDs
-        const [moviesResponse, tvResponse] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${TMDB_API_KEY}&language=en-US&page=1`)
-        ]);
-        
-        if (!moviesResponse.ok || !tvResponse.ok) {
-          throw new Error('Failed to fetch content');
-        }
-
-        const [moviesData, tvData] = await Promise.all([
-          moviesResponse.json(),
-          tvResponse.json()
-        ]);
-        
-        // Combine movies and TV shows
-        const allContent = [
-          ...moviesData.results.map((item: any) => ({ ...item, type: 'movie' })),
-          ...tvData.results.map((item: any) => ({ ...item, type: 'tv' }))
+        // Define available banner images in the topbar folder
+        const availableBanners: string[] = [
+          // Add banner filenames here when they are added to /src/assets/topbar/
+          // 'banner1.jpg',
+          // 'banner2.jpg',
+          // 'banner3.png',
         ];
-        
-        // Try to get banner from Fanart.tv first (perfect banner aspect ratios)
-        let bannerFound = false;
-        let attempts = 0;
-        const maxAttempts = 5;
-        
-        while (!bannerFound && attempts < maxAttempts && allContent.length > 0) {
-          const randomContent = allContent[Math.floor(Math.random() * allContent.length)];
-          
-          try {
-            // Get banner from Fanart.tv using TMDB ID
-            const FANART_API_KEY = import.meta.env.VITE_FANART_API_KEY || 'your_fanart_api_key_here';
-            
-            if (FANART_API_KEY === 'your_fanart_api_key_here') {
-              console.warn('Fanart.tv API key not configured, skipping to TMDB fallback');
-              break;
-            }
-            
-            const fanartUrl = randomContent.type === 'movie' 
-              ? `https://webservice.fanart.tv/v3/movies/${randomContent.id}?api_key=${FANART_API_KEY}`
-              : `https://webservice.fanart.tv/v3/tv/${randomContent.id}?api_key=${FANART_API_KEY}`;
-            
-            const fanartResponse = await fetch(fanartUrl);
-            
-            if (fanartResponse.ok) {
-              const fanartData = await fanartResponse.json();
-              
-              // Try different banner types in order of preference
-              const bannerTypes = ['hdclearart', 'clearart', 'tvbanner'];
-              let selectedBanner = null;
-              
-              for (const bannerType of bannerTypes) {
-                if (fanartData[bannerType] && fanartData[bannerType].length > 0) {
-                  selectedBanner = fanartData[bannerType][0].url;
-                  break;
-                }
-              }
-              
-              if (selectedBanner) {
-                console.log('Fanart.tv Banner:', {
-                  title: randomContent.title || randomContent.name,
-                  type: randomContent.type,
-                  url: selectedBanner,
-                  source: 'Fanart.tv (perfect banner aspect ratio)'
-                });
-                setBannerImage(selectedBanner);
-                bannerFound = true;
-              }
-            }
-          } catch (fanartError) {
-            console.log('Fanart.tv failed for', randomContent.title || randomContent.name);
-          }
-          
-          attempts++;
+
+        if (availableBanners.length > 0) {
+          // Select a random banner from available images
+          const randomBanner = availableBanners[Math.floor(Math.random() * availableBanners.length)];
+          const bannerUrl = `/src/assets/topbar/${randomBanner}`;
+          setBannerImage(bannerUrl);
+          console.log('Local banner loaded:', bannerUrl);
+        } else {
+          // No banners available, use default styling
+          setBannerImage('');
+          console.log('No local banners available, using default styling');
         }
-        
-        // Fallback to TMDB backdrops if no Fanart.tv banner found
-        if (!bannerFound && allContent.length > 0) {
-          const contentWithBackdrops = allContent.filter((item: any) => item.backdrop_path);
-          if (contentWithBackdrops.length > 0) {
-            const randomContent = contentWithBackdrops[Math.floor(Math.random() * contentWithBackdrops.length)];
-            const backdropUrl = `https://image.tmdb.org/t/p/w1920${randomContent.backdrop_path}`;
-            console.log('TMDB Fallback Banner:', { 
-              title: randomContent.title || randomContent.name, 
-              type: randomContent.type,
-              url: backdropUrl,
-              source: 'TMDB backdrop (cropped)'
-            });
-            setBannerImage(backdropUrl);
-          }
-        }
-        
       } catch (error) {
-        console.error('Error fetching banner:', error);
+        console.error('Error loading local banner:', error);
+        setBannerImage('');
       }
     };
 
-    fetchRandomBanner();
+    loadLocalBanner();
     
-    // Refresh banner every 5 minutes
-    const interval = setInterval(fetchRandomBanner, 5 * 60 * 1000);
+    // Refresh banner every 5 minutes (if multiple banners are available)
+    const interval = setInterval(loadLocalBanner, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [config.tmdbApiKey]);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -186,11 +99,6 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
         overflow: 'hidden', // Clip any overflow from the background image
         // Smooth transition when banner changes
         transition: 'background-image 0.5s ease-in-out',
-        // Ensure fixed positioning works on mobile
-        position: 'fixed !important',
-        transform: 'none !important',
-        WebkitTransform: 'none !important',
-        willChange: 'auto',
       }}
     >
       <Toolbar sx={{
@@ -259,8 +167,8 @@ export default function Topbar({ toggleTheme, mode, onMenuClick }: TopbarProps) 
                 src={logoImage}
                 alt="CineSync Logo"
                 style={{
-                  width: '100%',
-                  height: '100%',
+                  width: '75%',
+                  height: '75%',
                   objectFit: 'contain',
                   display: 'block'
                 }}

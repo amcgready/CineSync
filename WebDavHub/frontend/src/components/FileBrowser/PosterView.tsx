@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, memo } from 'react';
-import { Box, Paper, Typography, Skeleton, Menu, MenuItem, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
+import { Box, Paper, Typography, Skeleton, Menu, MenuItem, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Checkbox } from '@mui/material';
 import { useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import InfoIcon from '@mui/icons-material/InfoOutlined';
@@ -29,6 +29,9 @@ interface PosterViewProps {
   onRename: () => void;
   onDeleted: () => void;
   onNavigateBack?: () => void;
+  selectedFiles?: Set<string>;
+  onFileSelect?: (fileName: string, checked: boolean) => void;
+  selectionMode?: boolean;
 }
 
 const PosterView = memo(({
@@ -42,6 +45,9 @@ const PosterView = memo(({
   onRename,
   onDeleted,
   onNavigateBack,
+  selectedFiles = new Set(),
+  onFileSelect,
+  selectionMode = false,
 }: PosterViewProps) => {
   const theme = useTheme();
   const [contextMenu, setContextMenu] = useState<{
@@ -157,6 +163,41 @@ const PosterView = memo(({
               onClick={() => onFileClick(file, tmdb)}
               onContextMenu={(e) => handleContextMenu(e, file)}
             >
+              {/* Selection checkbox */}
+              {(selectionMode || selectedFiles.size > 0) && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    left: 8,
+                    zIndex: 2,
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: 1,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onFileSelect) {
+                      onFileSelect(file.name, !selectedFiles.has(file.name));
+                    }
+                  }}
+                >
+                  <Checkbox
+                    checked={selectedFiles.has(file.name)}
+                    size="small"
+                    sx={{
+                      p: 0.5,
+                      color: 'text.secondary',
+                      '&.Mui-checked': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  />
+                </Box>
+              )}
               {/* Category poster overlay */}
               {file.isCategoryFolder && file.type === 'directory' && (
                 <CategoryPosterDisplay

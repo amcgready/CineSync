@@ -35,6 +35,9 @@ export interface MobileListItemProps {
   onMenuClick?: (event: React.MouseEvent<HTMLElement>) => void;
   formatDate: (date?: string) => string;
   menu?: React.ReactNode;
+  isSelected?: boolean;
+  onSelect?: (checked: boolean) => void;
+  showSelection?: boolean;
 }
 
 export interface AlphabetIndexProps {

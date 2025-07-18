@@ -230,6 +230,7 @@ func getConfigDefinitions() []ConfigValue {
 
 		// TMDb/IMDB Configuration
 		{Key: "TMDB_API_KEY", Category: "TMDb/IMDB Configuration", Type: "string", Required: false, Description: "Your TMDb API key for accessing TMDb services"},
+		{Key: "FANART_API_KEY", Category: "TMDb/IMDB Configuration", Type: "string", Required: false, Description: "Your Fanart.tv API key for high-quality banner images"},
 		{Key: "LANGUAGE", Category: "TMDb/IMDB Configuration", Type: "string", Required: false, Description: "Language for TMDb API requests"},
 		{Key: "ANIME_SCAN", Category: "TMDb/IMDB Configuration", Type: "boolean", Required: false, Description: "Enable or disable anime-specific scanning"},
 		{Key: "TMDB_FOLDER_ID", Category: "TMDb/IMDB Configuration", Type: "boolean", Required: false, Description: "Enable or disable TMDb folder ID functionality"},

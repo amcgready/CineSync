@@ -28,3 +28,65 @@
     -webkit-backface-visibility: hidden;
   }
 }
+
+/* Banner optimization for HD clear art images */
+.banner-optimized {
+  /* Pseudo-element approach: blurred HD clear art, sharp UI elements */
+  position: relative !important;
+  
+  /* Ensure smooth transitions */
+  transition: background-image 0.5s ease-in-out !important;
+}
+
+/* Blurred HD clear art layer (only the image is blurred) */
+.banner-optimized::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  filter: blur(6px) !important;
+  z-index: -2 !important;
+}
+
+/* Dark overlay for text readability */
+.banner-optimized::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: -1 !important;
+}
+
+/* Responsive banner heights for different screen sizes */
+@media (min-width: 1200px) {
+  .banner-optimized {
+    /* For larger screens, maintain the 185px height */
+    min-height: 185px !important;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 601px) {
+  .banner-optimized {
+    /* For medium screens, scale proportionally */
+    min-height: 150px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .banner-optimized {
+    /* For mobile, use smaller height */
+    min-height: 120px !important;
+  }
+  
+  /* Slightly reduce blur on mobile for performance */
+  .banner-optimized::before {
+    filter: blur(4px) !important;
+  }
+}

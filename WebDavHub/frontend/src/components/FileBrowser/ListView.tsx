@@ -10,6 +10,7 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Checkbox,
 } from '@mui/material';
 import { FileItem } from './types';
 import { getFileIcon } from './fileUtils';
@@ -26,6 +27,9 @@ interface ListViewProps {
   onDeleted: () => void;
   onError: (error: string) => void;
   onNavigateBack?: () => void;
+  selectedFiles?: Set<string>;
+  onFileSelect?: (fileName: string, checked: boolean) => void;
+  selectionMode?: boolean;
 }
 
 export default function ListView({
@@ -38,6 +42,9 @@ export default function ListView({
   onDeleted,
   onError,
   onNavigateBack,
+  selectedFiles = new Set(),
+  onFileSelect,
+  selectionMode = false,
 }: ListViewProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -67,6 +74,13 @@ export default function ListView({
             file={file}
             onItemClick={() => onItemClick(file)}
             formatDate={formatDate}
+            isSelected={selectedFiles.has(file.name)}
+            onSelect={(checked) => {
+              if (onFileSelect) {
+                onFileSelect(file.name, checked);
+              }
+            }}
+            showSelection={selectionMode || selectedFiles.size > 0}
             menu={
               <FileActionMenu
                 file={file}
@@ -97,14 +111,29 @@ export default function ListView({
         '& td, & th': {
           px: 2,
           py: 1.5,
-          '&:first-of-type': { width: '50%' },
-          '&:nth-of-type(2)': { width: '15%' },
-          '&:nth-of-type(3)': { width: '25%' },
+          '&:first-of-type': { width: (selectionMode || selectedFiles.size > 0) ? '50px' : '50%' },
+          '&:nth-of-type(2)': { width: (selectionMode || selectedFiles.size > 0) ? '45%' : '15%' },
+          '&:nth-of-type(3)': { width: '15%' },
+          '&:nth-of-type(4)': { width: '25%' },
           '&:last-child': { width: '10%' },
         },
       }}>
         <TableHead>
           <TableRow sx={{ bgcolor: 'action.hover' }}>
+            {(selectionMode || selectedFiles.size > 0) && (
+              <TableCell sx={{ fontWeight: 600, width: '50px' }}>
+                <Checkbox
+                  checked={selectedFiles.size === files.length && files.length > 0}
+                  indeterminate={selectedFiles.size > 0 && selectedFiles.size < files.length}
+                  onChange={(e) => {
+                    if (onFileSelect) {
+                      files.forEach(file => onFileSelect(file.name, e.target.checked));
+                    }
+                  }}
+                  size="small"
+                />
+              </TableCell>
+            )}
             <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Modified</TableCell>
@@ -133,6 +162,19 @@ export default function ListView({
                 }
               }}
             >
+              {(selectionMode || selectedFiles.size > 0) && (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedFiles.has(file.name)}
+                    onChange={(e) => {
+                      if (onFileSelect) {
+                        onFileSelect(file.name, e.target.checked);
+                      }
+                    }}
+                    size="small"
+                  />
+                </TableCell>
+              )}
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
                   <Box sx={{ mr: 2, display: 'flex' }}>

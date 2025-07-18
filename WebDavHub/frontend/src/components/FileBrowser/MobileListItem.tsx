@@ -1,9 +1,17 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Checkbox } from '@mui/material';
 import { getFileIcon } from './fileUtils.tsx';
 import { MobileListItemProps } from './types';
 
-const MobileListItem: React.FC<MobileListItemProps> = ({ file, onItemClick, formatDate, menu }) => {
+const MobileListItem: React.FC<MobileListItemProps> = ({ 
+  file, 
+  onItemClick, 
+  formatDate, 
+  menu, 
+  isSelected = false, 
+  onSelect, 
+  showSelection = false 
+}) => {
   return (
     <Box
       data-file-name={file.name}
@@ -36,6 +44,28 @@ const MobileListItem: React.FC<MobileListItemProps> = ({ file, onItemClick, form
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
+        {/* Selection checkbox */}
+        {showSelection && (
+          <Checkbox
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              if (onSelect) {
+                onSelect(e.target.checked);
+              }
+            }}
+            size="small"
+            sx={{
+              p: 0.5,
+              mr: 1,
+              color: 'text.secondary',
+              '&.Mui-checked': {
+                color: 'primary.main',
+              },
+            }}
+          />
+        )}
+        
         <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
           {getFileIcon(file.name, file.type)}
         </Box>

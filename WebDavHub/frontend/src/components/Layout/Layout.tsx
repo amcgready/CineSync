@@ -72,7 +72,6 @@ export default function Layout({ toggleTheme, mode }: LayoutProps) {
         display: 'flex',
         flexGrow: 1,
         overflow: 'hidden',
-        pt: '188px' // Fixed padding to match 188px toolbar height
       }}>
 
         {!isMobile && !isMediaDetailsPage && (
